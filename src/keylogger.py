@@ -59,6 +59,10 @@ class Keylogger:
         :return: None
         """
 
+        if self.run:
+            messagebox.showwarning("Load File", "Cannot load state while keylogger is running.")
+            return
+
         file_path = filedialog.askopenfilename(
             initialdir=self.data_dir,
             title="Select a file to load",
@@ -150,10 +154,13 @@ class Keylogger:
         :return: None
         """
 
-        self.key_counts = {}
-        if not self.run:
+        confirm = messagebox.askyesno(
+            "Confirm Reset", "Are you sure you want to reset the keylogger? This will clear all logged keys."
+        )
+        if confirm:
+            self.key_counts.clear()
             self.update_table()
-        messagebox.showinfo(self.title, "Keylogger state reset.")
+            messagebox.showinfo("Keylogger Reset", "The keylogger has been reset.")
 
     def about(self):
         """
