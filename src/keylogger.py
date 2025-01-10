@@ -30,7 +30,7 @@ class Keylogger:
         self.data_dir = "data"
         os.makedirs(self.data_dir, exist_ok=True)
 
-    def save_state(self):
+    def save_state(self) -> None:
         """
         Save the current key counts to a JSON file.
 
@@ -52,7 +52,7 @@ class Keylogger:
             json.dump(sorted_counts, f, indent=4)
         messagebox.showinfo("Save State", f"State saved to {file_path}.")
 
-    def load_state(self):
+    def load_state(self) -> None:
         """
         Load key counts from a JSON file.
 
@@ -78,7 +78,7 @@ class Keylogger:
             self.update_table()
         messagebox.showinfo("Load State", f"State loaded from {file_path}.")
 
-    def update_table(self):
+    def update_table(self) -> None:
         """
         Update the table with the current key counts, sorted by the count in descending order.
 
@@ -99,14 +99,21 @@ class Keylogger:
         if self.run:
             self.root.after(1000, self.update_table)
 
-    def on_press(self, key):
+    def on_press(self, key: keyboard.Key) -> None:
+        """
+        Callback function to handle key press events.
+
+        :param key: The key that was pressed.
+        :return: None
+        """
+
         try:
             key_name = key.char if key.char else str(key)
         except AttributeError:
             key_name = str(key)  # Handle special keys
         self.key_counts[key_name] = self.key_counts.get(key_name, 0) + 1
 
-    def start_keylogger(self):
+    def start_keylogger(self) -> None:
         """
         Start the keylogger in a separate thread.
 
@@ -131,7 +138,7 @@ class Keylogger:
         self.status_label.config(text=f"Running", bg="green")
         messagebox.showinfo(self.title, "Keylogger started.")
 
-    def stop_keylogger(self):
+    def stop_keylogger(self) -> None:
         """
         Stop the keylogger.
 
@@ -147,7 +154,7 @@ class Keylogger:
         else:
             messagebox.showinfo(self.title, "Keylogger is not running.")
 
-    def reset_keylogger(self):
+    def reset_keylogger(self) -> None:
         """
         Reset the keylogger state.
 
@@ -162,7 +169,7 @@ class Keylogger:
             self.update_table()
             messagebox.showinfo("Keylogger Reset", "The keylogger has been reset.")
 
-    def about(self):
+    def about(self) -> None:
         """
         Display information about the keylogger.
 
@@ -171,7 +178,7 @@ class Keylogger:
 
         messagebox.showinfo("About", self.title)
 
-    def create_gui(self):
+    def create_gui(self) -> None:
         """
         Create the GUI for the keylogger.
 
