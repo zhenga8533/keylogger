@@ -1,2 +1,1 @@
-python-dotenv >= 0.0.5
 pynput == 1.7.7

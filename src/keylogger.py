@@ -2,6 +2,7 @@ from pynput import keyboard
 from tkinter import ttk, messagebox, simpledialog, filedialog
 import json
 import os
+import sys
 import threading
 import tkinter as tk
 
@@ -13,7 +14,16 @@ class Keylogger:
         """
 
         # Load metadata
-        with open("metadata.json", "r") as f:
+        if getattr(sys, "frozen", False):  # Check if running as an executable
+            base_path = sys._MEIPASS  # PyInstaller's temporary directory
+        else:
+            base_path = os.path.dirname(__file__)  # Directory of the script
+
+        # Construct the full path to metadata.json
+        metadata_path = os.path.join(base_path, "metadata.json")
+
+        # Load metadata
+        with open(metadata_path, "r") as f:
             data = json.load(f)
         self.title = f"Keylogger - v{data['version']}"
 
