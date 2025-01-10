@@ -1,7 +1,8 @@
+from hotkey_manager import HotkeyManager
 from pynput import keyboard
 from tkinter import ttk, messagebox, simpledialog, filedialog
-import os
 import json
+import os
 import threading
 import tkinter as tk
 
@@ -12,6 +13,10 @@ class Keylogger:
         Keylogger class to log key presses and display them in a table.
         """
 
+        with open("metadata.json", "r") as f:
+            data = json.load(f)
+        self.title = f"Keylogger - v{data['version']}"
+
         self.key_counts = {}
         self.save_file = "keylogger_state.json"
         self.run = False
@@ -21,6 +26,8 @@ class Keylogger:
         self.data_dir = "data"
         os.makedirs(self.data_dir, exist_ok=True)
 
+        self.hotkey_manager = HotkeyManager(self.data_dir)
+
     def start_keylogger(self):
         """
         Start the keylogger in a separate thread.
@@ -29,7 +36,7 @@ class Keylogger:
         """
 
         if self.run:
-            messagebox.showinfo("Keylogger", "Keylogger is already running.")
+            messagebox.showinfo(self.title, "Keylogger is already running.")
             return
 
         def run_listener():
@@ -39,7 +46,8 @@ class Keylogger:
             self.run = False
 
         threading.Thread(target=run_listener, daemon=True).start()
-        messagebox.showinfo("Keylogger", "Keylogger started. Press ESC to stop logging.")
+        self.update_table()
+        messagebox.showinfo(self.title, f"Keylogger started. Press {self.hotkey_manager.hotkeys['Stop']} to stop.")
 
     def stop_keylogger(self):
         """
@@ -52,9 +60,9 @@ class Keylogger:
             keyboard.Controller().press(keyboard.Key.esc)
             keyboard.Controller().release(keyboard.Key.esc)
             self.run = False
-            messagebox.showinfo("Keylogger", "Keylogger stopped.")
+            messagebox.showinfo(self.title, "Keylogger stopped.")
         else:
-            messagebox.showinfo("Keylogger", "Keylogger is not running.")
+            messagebox.showinfo(self.title, "Keylogger is not running.")
 
     def save_state(self):
         """
@@ -112,7 +120,8 @@ class Keylogger:
         for key, count in sorted_counts:
             self.table.insert("", "end", values=(key, count))
 
-        self.root.after(1000, self.update_table)
+        if self.run:
+            self.root.after(1000, self.update_table)
 
     def on_press(self, key):
         """
@@ -126,16 +135,19 @@ class Keylogger:
             key_name = key.char if key.char else str(key)
         except AttributeError:
             key_name = str(key)  # Handle special keys
-        self.key_counts[key_name] = self.key_counts.get(key_name, 0) + 1
 
-    def customize_hotkey(self):
-        """
-        Customize the hotkey to start and stop the keylogger.
-
-        :return: None
-        """
-
-        messagebox.showinfo("Customize Hotkeys", "Hotkeys customized.")
+        # Check if the key matches any custom hotkey
+        if key_name == self.hotkey_manager.hotkeys["Start"]:
+            self.start_keylogger()
+        elif key_name == self.hotkey_manager.hotkeys["Stop"]:
+            self.stop_keylogger()
+        elif key_name == self.hotkey_manager.hotkeys["Save"]:
+            self.save_state()
+        elif key_name == self.hotkey_manager.hotkeys["Load"]:
+            self.load_state()
+        else:
+            # Update key counts for general logging
+            self.key_counts[key_name] = self.key_counts.get(key_name, 0) + 1
 
     def about(self):
         """
@@ -144,7 +156,7 @@ class Keylogger:
         :return: None
         """
 
-        messagebox.showinfo("About", "Keylogger with Menu Bar")
+        messagebox.showinfo("About", self.title)
 
     def create_gui(self):
         """
@@ -154,25 +166,27 @@ class Keylogger:
         """
 
         self.root = tk.Tk()
-        self.root.title("Keylogger with Menu Bar")
+        self.root.title(self.title)
 
         # Create the menu bar
         menu_bar = tk.Menu(self.root)
 
         # File Menu
         file_menu = tk.Menu(menu_bar, tearoff=0)
-        file_menu.add_command(label="Start Keylogger", command=self.start_keylogger)
-        file_menu.add_command(label="Stop Keylogger", command=self.stop_keylogger)
+        file_menu.add_command(label=f"Start ({self.hotkey_manager.hotkeys['Start']})", command=self.start_keylogger)
+        file_menu.add_command(label=f"Stop ({self.hotkey_manager.hotkeys['Stop']})", command=self.stop_keylogger)
         file_menu.add_separator()
-        file_menu.add_command(label="Save State", command=self.save_state)
-        file_menu.add_command(label="Load State", command=self.load_state)
+        file_menu.add_command(label=f"Save ({self.hotkey_manager.hotkeys['Save']})", command=self.save_state)
+        file_menu.add_command(label=f"Load ({self.hotkey_manager.hotkeys['Load']})", command=self.load_state)
         file_menu.add_separator()
         file_menu.add_command(label="Exit", command=lambda: self.root.destroy())
         menu_bar.add_cascade(label="File", menu=file_menu)
 
         # Settings Menu
         settings_menu = tk.Menu(menu_bar, tearoff=0)
-        settings_menu.add_command(label="Customize Hotkeys", command=self.customize_hotkey)
+        settings_menu.add_command(
+            label="Customize Hotkeys", command=lambda: self.hotkey_manager.customize_hotkeys(self.root)
+        )
         menu_bar.add_cascade(label="Settings", menu=settings_menu)
 
         # Help Menu
@@ -193,5 +207,4 @@ class Keylogger:
         self.table.pack()
 
         # Run the main loop
-        self.update_table()
         self.root.mainloop()
