@@ -48,7 +48,8 @@ class Keylogger:
 
         file_path = os.path.join(self.data_dir, f"{file_name}.json")
         with open(file_path, "w") as f:
-            json.dump(self.key_counts, f)
+            sorted_counts = {k: v for k, v in sorted(self.key_counts.items(), key=lambda x: x[1], reverse=True)}
+            json.dump(sorted_counts, f, indent=4)
         messagebox.showinfo("Save State", f"State saved to {file_path}.")
 
     def load_state(self):
@@ -123,6 +124,7 @@ class Keylogger:
         # Start the listener in a separate thread
         threading.Thread(target=run_listener, daemon=True).start()
         self.update_table()
+        self.status_label.config(text=f"Running", bg="green")
         messagebox.showinfo(self.title, "Keylogger started.")
 
     def stop_keylogger(self):
@@ -136,6 +138,7 @@ class Keylogger:
             self.run = False
             if self.listener:  # Stop the listener explicitly
                 self.listener.stop()
+            self.status_label.config(text=f"Stopped", bg="red")
             messagebox.showinfo(self.title, "Keylogger stopped.")
         else:
             messagebox.showinfo(self.title, "Keylogger is not running.")
@@ -202,6 +205,22 @@ class Keylogger:
         self.table.heading("Key", text="Key")
         self.table.heading("Count", text="Count")
         self.table.pack()
+
+        # Status Bubble
+        status_frame = tk.Frame(self.root)
+        status_frame.pack(pady=10, fill="x", side="bottom")
+
+        self.status_label = tk.Label(
+            status_frame,
+            text="Stopped",
+            bg="red",
+            fg="white",
+            font=("Arial", 12),
+            width=10,
+            relief="ridge",
+            anchor="center",
+        )
+        self.status_label.pack(side="right", padx=10, pady=10)
 
         # Run the main loop
         self.root.mainloop()
